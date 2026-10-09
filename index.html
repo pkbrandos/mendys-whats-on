@@ -1,3 +1,11 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
 <title>Mendy's What's On</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -102,10 +110,44 @@ ul.list { list-style: none; margin: 0; padding: 0; }
 .foot a { color: var(--accent); }
 .foot p { margin: 0; max-width: 64ch; }
 
-@media (max-width: 560px) {
-  .ev { grid-template-columns: 4.6rem minmax(0, 1fr); }
-  .act { grid-column: 2; padding: 0; }
-  .lbl { min-width: 100%; }
+.when .m { display: none; }
+@media (max-width: 640px) {
+  /* header: brand on top, nav on one swipeable line */
+  .bar .wrap { padding-block: 10px 6px; gap: 4px; }
+  .nav { flex-wrap: nowrap; overflow-x: auto; gap: 18px; width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a { white-space: nowrap; padding-block: 8px; }
+  .intro { padding-block: 20px 4px; }
+  .intro p { font-size: 0.95rem; }
+
+  /* filters: chips swipe sideways, 16px inputs stop iOS zooming, big tap targets */
+  .filters { gap: 12px; }
+  .row { flex-wrap: nowrap; overflow-x: auto; margin-inline: -16px; padding-inline: 16px; padding-bottom: 2px; scrollbar-width: none; }
+  .row::-webkit-scrollbar { display: none; }
+  .lbl { display: none; }
+  .chip { flex: none; white-space: nowrap; padding: 10px 16px; font-size: 0.95rem; }
+  .days { gap: 4px; }
+  .day { padding: 10px 0; min-height: 60px; }
+  .fields { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field:first-child { grid-column: 1 / -1; }
+  .field input, .field select { font-size: 16px; padding: 11px 10px; min-height: 44px; }
+  .status { font-size: 0.85rem; }
+
+  /* listings: one column, time as a small label above the title */
+  .group h2 { font-size: 1.05rem; padding: 10px 0 8px; }
+  .ev { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 14px 0 16px; }
+  .when { font-size: 0.85rem; color: var(--accent); }
+  .when.tbc { color: var(--muted); }
+  .when .d { display: none; }
+  .when .m { display: inline; }
+  .title { font-size: 1.08rem; line-height: 1.3; }
+  .act { grid-column: 1; justify-self: start; display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; padding: 0 16px; border: 1px solid var(--accent); border-radius: 999px; }
+  .act:hover { text-decoration: none; background: var(--tint); }
+  .foot .wrap { padding-block: 20px 28px; }
+}
+@media (max-width: 360px) {
+  .day small { font-size: 0.62rem; }
+  .fields { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .chip, .day { transition: background-color 0.12s, border-color 0.12s; }
@@ -179,7 +221,7 @@ ul.list { list-style: none; margin: 0; padding: 0; }
   }
   function timeText(e) {
     if (!e.s) return 'Time TBC';
-    return t12(e.s) + (e.e ? '–' + t12(e.e) : '');
+    return t12(e.s);
   }
 
   var TODAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date());
@@ -227,11 +269,12 @@ ul.list { list-style: none; margin: 0; padding: 0; }
   function whereText(e) {
     return e.v.toLowerCase().indexOf(e.tn.toLowerCase()) === -1 ? e.v + ', ' + e.tn : e.v;
   }
+  var SEP = '<br class="d"><span class="m"> \u00b7 </span>';
   function rowHtml(e, ongoing) {
     var when;
     if (ongoing) {
-      var f = e.d && e.d > TODAY ? 'From ' + shortDay(e.d) + '<br>' : '';
-      when = '<div class="when">' + f + 'To ' + shortDay(e.to) + (e.s ? '<br>' + esc(t12(e.s)) : '') + '</div>';
+      var f = e.d && e.d > TODAY ? 'From ' + shortDay(e.d) + SEP : '';
+      when = '<div class="when">' + f + 'To ' + shortDay(e.to) + (e.s ? SEP + esc(t12(e.s)) : '') + '</div>';
     } else {
       when = '<div class="when' + (e.s ? '' : ' tbc') + '">' + esc(timeText(e)) + '</div>';
     }
@@ -319,3 +362,6 @@ ul.list { list-style: none; margin: 0; padding: 0; }
   });
 })();
 </script>
+
+</body>
+</html>
