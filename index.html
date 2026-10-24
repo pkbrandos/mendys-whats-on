@@ -273,11 +273,10 @@ ul.list { list-style: none; margin: 0; padding: 0; }
     return e.v.toLowerCase().indexOf(e.tn.toLowerCase()) === -1 ? e.v + ', ' + e.tn : e.v;
   }
   var SEP = '<br class="d"><span class="m"> \u00b7 </span>';
-  function rowHtml(e, ongoing) {
+  function rowHtml(e) {
     var when;
-    if (ongoing) {
-      var f = e.d && e.d > TODAY ? 'From ' + shortDay(e.d) + SEP : '';
-      when = '<div class="when">' + f + 'To ' + shortDay(e.to) + (e.s ? SEP + esc(t12(e.s)) : '') + '</div>';
+    if (e.to && e.to !== e.d) {
+      when = '<div class="when">' + (e.s ? esc(t12(e.s)) + SEP : '') + 'Until ' + shortDay(e.to) + '</div>';
     } else {
       when = '<div class="when' + (e.s ? '' : ' tbc') + '">' + esc(timeText(e)) + '</div>';
     }
@@ -299,35 +298,42 @@ ul.list { list-style: none; margin: 0; padding: 0; }
     var html = '';
     for (var i = 0; i < 7; i++) {
       var ds = addDays(TODAY, i), d = parse(ds);
-      var n = EV.filter(function (e) { return e.d === ds && !e.to && matches(e); }).length;
+      var n = EV.filter(function (e) { return matches(e) && anchorFor(e, [ds, ds], true) === ds; }).length;
       html += '<button type="button" class="day' + (i === 0 ? ' is-today' : '') + '" data-day="' + ds + '" aria-pressed="' + (state.day === ds) + '" aria-label="' + esc(longDay(ds) + ', ' + n + ' events') + '">' +
         '<small>' + DAYN[d.getDay()].slice(0, 3) + '</small><strong>' + d.getDate() + '</strong><em>' + n + '</em></button>';
     }
     el.days.innerHTML = html;
   }
 
+  function isMulti(e) { return !!e.to && e.to !== e.d; }
+  // The day an event is listed under. Single-day events: their own day. Multi-day events: only their first day
+  // (or the first day of the current view if they are already under way), never repeated on later days.
+  function anchorFor(e, w, strictDay) {
+    if (!isMulti(e)) return e.d >= w[0] && e.d <= w[1] ? e.d : null;
+    var start = e.d && e.d > TODAY ? e.d : TODAY;
+    if (strictDay) return start === w[0] ? start : null;
+    var a = start > w[0] ? start : w[0];
+    return a <= w[1] && a <= e.to ? a : null;
+  }
+
   function render() {
     var w = windowFor();
-    var dated = EV.filter(function (e) { return !e.to && e.d >= TODAY && inWindow(e, w) && matches(e); });
-    var running = EV.filter(function (e) { return e.to && e.to >= TODAY && inWindow(e, w) && matches(e); });
-    var total = dated.length + running.length;
+    var items = [];
+    EV.forEach(function (e) {
+      if (!matches(e) || (e.to || e.d) < TODAY) return;
+      var k = anchorFor(e, w, !!state.day);
+      if (k) items.push({ k: k, e: e });
+    });
+    var total = items.length;
     var byDay = {};
-    dated.forEach(function (e) { (byDay[e.d] = byDay[e.d] || []).push(e); });
+    items.forEach(function (it) { (byDay[it.k] = byDay[it.k] || []).push(it.e); });
     var keys = Object.keys(byDay).sort();
     var out = '';
-    var single = w[0] === w[1];
-    var runHtml = '';
-    if (running.length) {
-      running.sort(function (a, b) { return a.to < b.to ? -1 : 1; });
-      runHtml = '<section class="group running"><h2>' + (single ? 'Also running that day' : 'Running over several days') + '</h2><ul class="list">' + running.map(function (e) { return rowHtml(e, true); }).join('') + '</ul></section>';
-    }
-    if (!single) out += runHtml;
     keys.forEach(function (k) {
       byDay[k].sort(function (a, b) { return sortKey(a) < sortKey(b) ? -1 : sortKey(a) > sortKey(b) ? 1 : 0; });
       var badge = k === TODAY ? '<span class="badge">Today</span>' : k === addDays(TODAY, 1) ? '<span class="badge">Tomorrow</span>' : '';
-      out += '<section class="group"><h2>' + esc(longDay(k)) + badge + '</h2><ul class="list">' + byDay[k].map(function (e) { return rowHtml(e, false); }).join('') + '</ul></section>';
+      out += '<section class="group"><h2>' + esc(longDay(k)) + badge + '</h2><ul class="list">' + byDay[k].map(function (e) { return rowHtml(e); }).join('') + '</ul></section>';
     });
-    if (single) out += runHtml;
     if (!total) out = '<p class="empty">No events match these filters. Try another day, or clear the filters to see everything coming up.</p>';
     el.list.innerHTML = out;
     var first = keys.length ? shortDay(keys[0]) : '', lastK = keys.length ? shortDay(keys[keys.length - 1]) : '';
